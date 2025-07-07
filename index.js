@@ -2,9 +2,17 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const axios = require('axios');
 const path = require('path');
+const cors = require('cors');
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
+
+// Middleware
+app.set('trust proxy', 1); // Trust the first proxy
+app.use(cors()); // Enable CORS for all routes
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
+
 
 // Basic Authentication for Admin Panel
 const basicAuth = (req, res, next) => {
@@ -46,10 +54,6 @@ db.serialize(() => {
         lon REAL
     )`);
 });
-
-
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
 
 
 // Serve HTML files
@@ -114,5 +118,5 @@ app.get('/api/admin/logs', basicAuth, (req, res) => {
 
 
 app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+    console.log(`Server running on port ${port}`);
 }); 
