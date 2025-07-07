@@ -29,7 +29,7 @@
     <script>
         window.onload = async () => {
             try {
-                const response = await fetch('/api/admin/logs');
+                const response = await fetch('/api/admin/logs', { credentials: 'same-origin' });
                 const data = await response.json();
 
                 if (response.ok) {
