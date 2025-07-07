@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UTC Live Time</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @font-face {
+            font-family: 'Seven Segment';
+            src: url('/fonts/Seven-Segment.ttf') format('truetype');
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #fff; /* White background */
+            overflow: hidden; /* Prevent scrollbars */
+        }
+        #clock-container {
+            font-family: 'Seven Segment', sans-serif;
+            font-weight: bold;
+            font-size: 15vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            color: #333; /* Dark gray for on segments */
+            /* Force monospacing and add letter spacing */
+            font-kerning: none;
+            text-align: center;
+            letter-spacing: 0.08em;
+        }
+    </style>
+</head>
+<body>
+    <div id="clock-container">
+        <span id="clock"></span>
+    </div>
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const utcTime = now.toUTCString().split(' ')[4];
+            document.getElementById('clock').textContent = utcTime;
+        }
+
+        function requestLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        console.log("Latitude: " + position.coords.latitude + ", Longitude: " + position.longitude);
+                    },
+                    (error) => {
+                        console.error("Error getting location: ", error.message);
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        window.onload = () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+            requestLocation();
+        };
+    </script>
+</body>
+</html> 

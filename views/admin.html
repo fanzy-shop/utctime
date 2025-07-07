@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - IP Logs</title>
+    <link href="/style.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="container mx-auto">
+        <h1 class="text-3xl font-bold mb-4">IP Address Logs</h1>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <table class="min-w-full bg-white">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">Timestamp</th>
+                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">IP Address</th>
+                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">City</th>
+                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">Region</th>
+                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">Country</th>
+                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">Coordinates</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-body" class="text-gray-700">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        window.onload = async () => {
+            try {
+                const response = await fetch('/api/admin/logs');
+                const data = await response.json();
+
+                if (response.ok) {
+                    const logsBody = document.getElementById('logs-body');
+                    data.forEach(log => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="w-1/6 py-3 px-4">${new Date(log.timestamp).toLocaleString()}</td>
+                            <td class="w-1/6 py-3 px-4">${log.ip}</td>
+                            <td class="w-1/6 py-3 px-4">${log.city}</td>
+                            <td class="w-1/6 py-3 px-4">${log.region}</td>
+                            <td class="w-1/6 py-3 px-4">${log.country}</td>
+                            <td class="w-1/6 py-3 px-4">${log.lat}, ${log.lon}</td>
+                        `;
+                        logsBody.appendChild(row);
+                    });
+                } else {
+                    throw new Error(data.message || 'Failed to fetch logs');
+                }
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                alert('Failed to fetch logs. Please check console for details.');
+            }
+        };
+    </script>
+</body>
+</html> 
