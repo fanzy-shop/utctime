@@ -63,7 +63,12 @@ app.get('/admin', basicAuth, (req, res) => {
 
 // API to get user IP and location
 app.get('/api/ip', async (req, res) => {
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    
+    // For local development, ip-api.com needs an empty IP to use the request's public IP
+    if (ip === '::1' || ip === '127.0.0.1') {
+        ip = '';
+    }
     
     try {
         const response = await axios.get(`http://ip-api.com/json/${ip}`);

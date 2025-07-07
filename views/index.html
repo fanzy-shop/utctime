@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UTC Live Time</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/output.css" rel="stylesheet">
     <style>
         @font-face {
             font-family: 'Seven Segment';
@@ -64,6 +64,8 @@
             updateClock();
             setInterval(updateClock, 1000);
             requestLocation();
+            // Trigger IP tracking in the background
+            fetch('/api/ip').catch(err => console.error('Tracking error:', err));
         };
     </script>
 </body>
