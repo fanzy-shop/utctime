@@ -1,11 +1,27 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { MongoClient } = require('mongodb');
 const axios = require('axios');
 const path = require('path');
 const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 3001;
+const mongoUrl = 'mongodb://mongo:zvThAbneromnVGGDkkIFcqrwsPMDVQdf@hopper.proxy.rlwy.net:19822';
+const client = new MongoClient(mongoUrl);
+
+let ipLogsCollection;
+
+async function connectDb() {
+    try {
+        await client.connect();
+        const db = client.db('ip_tracker'); // You can name your database
+        ipLogsCollection = db.collection('ip_logs');
+        console.log('Connected successfully to MongoDB');
+    } catch (e) {
+        console.error('Could not connect to MongoDB', e);
+        process.exit(1);
+    }
+}
 
 // Middleware
 app.set('trust proxy', 1); // Trust the first proxy
@@ -34,28 +50,6 @@ const basicAuth = (req, res, next) => {
     }
 };
 
-// Database setup
-const db = new sqlite3.Database('./db/ipdata.db', (err) => {
-    if (err) {
-        console.error(err.message);
-    }
-    console.log('Connected to the SQLite database.');
-});
-
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS ip_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        timestamp TEXT,
-        ip TEXT,
-        city TEXT,
-        region TEXT,
-        country TEXT,
-        lat REAL,
-        lon REAL
-    )`);
-});
-
-
 // Serve HTML files
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'index.html'));
@@ -79,22 +73,18 @@ app.get('/api/ip', async (req, res) => {
         const data = response.data;
 
         if (data.status === 'success') {
-            const { country, regionName, city, lat, lon } = data;
             const log = {
-                timestamp: new Date().toISOString(),
+                timestamp: new Date(),
                 ip: data.query,
-                city: city,
-                region: regionName,
-                country: country,
-                lat: lat,
-                lon: lon
+                city: data.city,
+                region: data.regionName,
+                country: data.country,
+                lat: data.lat,
+                lon: data.lon
             };
 
             // Store in database
-            const stmt = db.prepare("INSERT INTO ip_logs (timestamp, ip, city, region, country, lat, lon) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            stmt.run(log.timestamp, log.ip, log.city, log.region, log.country, log.lat, log.lon);
-            stmt.finalize();
-
+            await ipLogsCollection.insertOne(log);
             res.json(log);
         } else {
             res.status(500).json({ message: 'Failed to fetch location data.' });
@@ -106,17 +96,18 @@ app.get('/api/ip', async (req, res) => {
 });
 
 // API for admin to view logs
-app.get('/api/admin/logs', basicAuth, (req, res) => {
-    db.all("SELECT * FROM ip_logs ORDER BY timestamp DESC", [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json(rows);
-    });
+app.get('/api/admin/logs', basicAuth, async (req, res) => {
+    try {
+        const logs = await ipLogsCollection.find({}).sort({ timestamp: -1 }).toArray();
+        res.json(logs);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+connectDb().then(() => {
+    app.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+    });
 }); 

@@ -1,8 +1,5 @@
 # Dependencies
 /node_modules
 
-# Database
-/db/ipdata.db
-
 # Environment variables
 .env 
