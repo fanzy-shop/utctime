@@ -3,6 +3,7 @@ const { MongoClient, ObjectId } = require('mongodb'); // Import ObjectId
 const axios = require('axios');
 const path = require('path');
 const cors = require('cors');
+const UAParser = require('ua-parser-js');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -73,6 +74,10 @@ app.get('/api/ip', async (req, res) => {
         const data = response.data;
 
         if (data.status === 'success') {
+            const parser = new UAParser(req.headers['user-agent']);
+            const uaInfo = parser.getResult();
+            const device = `${uaInfo.browser.name || 'N/A'} ${uaInfo.browser.version || ''} on ${uaInfo.os.name || 'N/A'} ${uaInfo.os.version || ''}`.trim();
+
             const log = {
                 timestamp: new Date(),
                 ip: data.query,
@@ -81,7 +86,7 @@ app.get('/api/ip', async (req, res) => {
                 country: data.country,
                 lat: data.lat,
                 lon: data.lon,
-                userAgent: req.headers['user-agent'] // Capture User-Agent
+                device: device // Store parsed device info
             };
 
             // Store in database
