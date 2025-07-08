@@ -8,17 +8,22 @@
 </head>
 <body class="bg-gray-100 p-8">
     <div class="container mx-auto">
-        <h1 class="text-3xl font-bold mb-4">IP Address Logs</h1>
-        <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-3xl font-bold">IP Address Logs</h1>
+            <button id="delete-all-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                Delete All Logs
+            </button>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
             <table class="min-w-full bg-white">
                 <thead class="bg-gray-800 text-white">
                     <tr>
-                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">Timestamp</th>
-                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">IP Address</th>
-                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">City</th>
-                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">Region</th>
-                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">Country</th>
-                        <th class="w-1/6 py-3 px-4 uppercase font-semibold text-sm">Coordinates</th>
+                        <th class="py-3 px-4 uppercase font-semibold text-sm">Timestamp</th>
+                        <th class="py-3 px-4 uppercase font-semibold text-sm">IP Address</th>
+                        <th class="py-3 px-4 uppercase font-semibold text-sm">Location</th>
+                        <th class="py-3 px-4 uppercase font-semibold text-sm">Coordinates</th>
+                        <th class="py-3 px-4 uppercase font-semibold text-sm">Device Info</th>
+                        <th class="py-3 px-4 uppercase font-semibold text-sm">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="logs-body" class="text-gray-700">
@@ -27,22 +32,73 @@
         </div>
     </div>
     <script>
+        const logsBody = document.getElementById('logs-body');
+
+        async function deleteLog(logId, buttonElement) {
+            if (!confirm('Are you sure you want to delete this log?')) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/admin/logs/${logId}`, {
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
+                if (response.ok) {
+                    // Remove the row from the table
+                    buttonElement.closest('tr').remove();
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.message || 'Failed to delete log');
+                }
+            } catch (error) {
+                console.error('Error deleting log:', error);
+                alert(error.message);
+            }
+        }
+
+        async function deleteAllLogs() {
+            if (!confirm('Are you sure you want to delete ALL logs? This action cannot be undone.')) {
+                return;
+            }
+            try {
+                const response = await fetch('/api/admin/logs', {
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
+                if (response.ok) {
+                    // Clear the table body
+                    logsBody.innerHTML = '';
+                    alert('All logs have been deleted.');
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.message || 'Failed to delete all logs');
+                }
+            } catch (error) {
+                console.error('Error deleting all logs:', error);
+                alert(error.message);
+            }
+        }
+
         window.onload = async () => {
+            document.getElementById('delete-all-btn').addEventListener('click', deleteAllLogs);
             try {
                 const response = await fetch('/api/admin/logs', { credentials: 'same-origin' });
                 const data = await response.json();
 
                 if (response.ok) {
-                    const logsBody = document.getElementById('logs-body');
                     data.forEach(log => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td class="w-1/6 py-3 px-4">${new Date(log.timestamp).toLocaleString()}</td>
-                            <td class="w-1/6 py-3 px-4">${log.ip}</td>
-                            <td class="w-1/6 py-3 px-4">${log.city}</td>
-                            <td class="w-1/6 py-3 px-4">${log.region}</td>
-                            <td class="w-1/6 py-3 px-4">${log.country}</td>
-                            <td class="w-1/6 py-3 px-4">${log.lat}, ${log.lon}</td>
+                            <td class="py-3 px-4">${new Date(log.timestamp).toLocaleString()}</td>
+                            <td class="py-3 px-4">${log.ip}</td>
+                            <td class="py-3 px-4">${log.city || 'N/A'}, ${log.region || 'N/A'}, ${log.country || 'N/A'}</td>
+                            <td class="py-3 px-4">${log.lat}, ${log.lon}</td>
+                            <td class="py-3 px-4 text-sm">${log.userAgent}</td>
+                            <td class="py-3 px-4">
+                                <button onclick="deleteLog('${log._id}', this)" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-2 rounded">
+                                    Delete
+                                </button>
+                            </td>
                         `;
                         logsBody.appendChild(row);
                     });

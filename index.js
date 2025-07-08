@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb'); // Import ObjectId
 const axios = require('axios');
 const path = require('path');
 const cors = require('cors');
@@ -80,7 +80,8 @@ app.get('/api/ip', async (req, res) => {
                 region: data.regionName,
                 country: data.country,
                 lat: data.lat,
-                lon: data.lon
+                lon: data.lon,
+                userAgent: req.headers['user-agent'] // Capture User-Agent
             };
 
             // Store in database
@@ -100,6 +101,31 @@ app.get('/api/admin/logs', basicAuth, async (req, res) => {
     try {
         const logs = await ipLogsCollection.find({}).sort({ timestamp: -1 }).toArray();
         res.json(logs);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// API for admin to delete a single log
+app.delete('/api/admin/logs/:id', basicAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await ipLogsCollection.deleteOne({ _id: new ObjectId(id) });
+        if (result.deletedCount === 1) {
+            res.status(200).json({ message: 'Log deleted successfully' });
+        } else {
+            res.status(404).json({ message: 'Log not found' });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// API for admin to delete all logs
+app.delete('/api/admin/logs', basicAuth, async (req, res) => {
+    try {
+        await ipLogsCollection.deleteMany({});
+        res.status(200).json({ message: 'All logs deleted successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
